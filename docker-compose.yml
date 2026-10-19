@@ -1,0 +1,34 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: handoff
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-handoff}
+      POSTGRES_DB: handoff
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U handoff"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://handoff:${POSTGRES_PASSWORD:-handoff}@db:5432/handoff
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-5-5}
+      API_KEY: ${API_KEY:-}
+      MAX_RETRIES: ${MAX_RETRIES:-3}
+      RETRY_BACKOFF_SECONDS: ${RETRY_BACKOFF_SECONDS:-0.5}
+      DAILY_REPORT_HOUR_UTC: ${DAILY_REPORT_HOUR_UTC:-}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

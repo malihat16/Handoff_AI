@@ -1,0 +1,16 @@
+Gulf Office Supplies LLC
+TAX INVOICE
+TRN: 100234567890003
+
+Invoice No: GOS-10482
+Invoice Date: 2026-10-01
+Due Date: 2026-10-31
+Bill To: Northwind Retail
+
+Description              Qty    Amount
+A4 paper (box)            10    AED 300.00
+Toner cartridge            1    AED 100.00
+
+Subtotal: AED 400.00
+VAT (5%): AED 20.00
+Total: AED 420.00

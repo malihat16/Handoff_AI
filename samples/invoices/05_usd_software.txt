@@ -1,0 +1,10 @@
+Acme Analytics Inc.
+Invoice
+
+Invoice #: INV-77310
+Invoice Date: Oct 3, 2026
+Due Date: Nov 2, 2026
+
+Analytics Pro, 5 seats, monthly
+
+Total: $249.00

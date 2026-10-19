@@ -1,0 +1,65 @@
+{
+  "workflows": {
+    "email_to_crm": {
+      "description": "Reads an inbound e-mail, classifies it, updates the CRM, creates a follow-up task and notifies the team. Complaints are held for human review.",
+      "trigger": "email",
+      "minutes_saved": 6,
+      "steps": [
+        {"step": "classify_email"},
+        {"step": "upsert_contact"},
+        {
+          "step": "require_approval",
+          "params": {
+            "reason": "Complaints are reviewed by a human before a task is assigned",
+            "conditions": [
+              {"field": "classification.intent", "in": ["complaint"]},
+              {"field": "classification.confidence", "lt": 0.5}
+            ]
+          }
+        },
+        {
+          "step": "create_task",
+          "params": {
+            "title": "[{{classification.intent}}] {{classification.summary}}",
+            "priority_field": "classification.priority"
+          }
+        },
+        {
+          "step": "notify",
+          "params": {
+            "channel": "slack",
+            "message": "New {{classification.priority}}-priority {{classification.intent}} from {{classification.sender_email}}: task created"
+          }
+        }
+      ]
+    },
+    "invoice_to_approval": {
+      "description": "Extracts structured data from an invoice, validates it, blocks duplicates, and routes large or low-confidence invoices to an approver before marking them approved.",
+      "trigger": "upload",
+      "minutes_saved": 15,
+      "steps": [
+        {"step": "extract_invoice"},
+        {"step": "validate_invoice"},
+        {"step": "save_invoice"},
+        {
+          "step": "require_approval",
+          "params": {
+            "reason": "Invoice needs manager approval",
+            "conditions": [
+              {"field": "invoice.total", "gt": 1000},
+              {"field": "invoice.confidence", "lt": 0.6}
+            ]
+          }
+        },
+        {"step": "finalize_invoice"},
+        {
+          "step": "notify",
+          "params": {
+            "channel": "email",
+            "message": "Invoice {{invoice.invoice_number}} from {{invoice.vendor}} ({{invoice.currency}} {{invoice.total}}) approved for payment"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,12 @@
+From: Skyline Cloud Hosting FZ-LLC
+Invoice Number: SCH-2026-0917
+Invoice Date: 17 September 2026
+Due Date: 17 October 2026
+Bill To: Northwind Retail
+
+Dedicated cluster (Sept)      AED 9,500.00
+Managed backups               AED 2,500.00
+
+Subtotal: AED 12,000.00
+VAT (5%): AED 600.00
+Total Amount Due: AED 12,600.00
