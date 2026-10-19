@@ -37,6 +37,8 @@ def compute_stats(db: Session, workflows: dict) -> dict:
     totals["failed"] -= blocked_total
 
     finished = totals["completed"] + totals["failed"]
+    by_person = db.scalar(select(func.count()).select_from(Run).where(
+        Run.status == "completed", Run.approved_by.is_not(None))) or 0
     avg_ms = db.scalar(select(func.avg(Run.duration_ms)).where(Run.status == "completed")) or 0
     minutes = sum(_minutes(workflows, wf) * c["completed"] for wf, c in by_wf.items())
 
@@ -59,6 +61,7 @@ def compute_stats(db: Session, workflows: dict) -> dict:
             "completed": totals["completed"],
             "failed": totals["failed"],
             "blocked": blocked_total,
+            "decided_by_person": by_person,
             "awaiting_approval": totals["awaiting_approval"],
             "rejected": totals["rejected"],
             "success_rate": round(100 * totals["completed"] / finished, 1) if finished else None,

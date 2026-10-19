@@ -266,3 +266,12 @@ def test_blocked_duplicate_is_labelled_and_not_counted_as_failure(client):
     assert t["failed"] == 0 and t["blocked"] == 1 and t["success_rate"] is None
     attention = client.get("/api/reports/daily").json()["needs_attention"]
     assert all(a["run_id"] != dup["id"] for a in attention)
+
+
+def test_stats_split_auto_handled_from_person_decided(client):
+    submit(client, "invoice_to_approval", sample("invoices", "01_office_supplies.txt"))   # small: automatic
+    big = submit(client, "invoice_to_approval", sample("invoices", "02_cloud_hosting.txt"))["run"]
+    assert client.get("/api/stats").json()["totals"]["decided_by_person"] == 0
+    client.post(f"/api/runs/{big['id']}/approve", json={"approver": "Hammad"})
+    t = client.get("/api/stats").json()["totals"]
+    assert (t["completed"], t["decided_by_person"]) == (2, 1)

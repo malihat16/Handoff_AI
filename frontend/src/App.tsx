@@ -3,11 +3,13 @@ import { api, errorMessage, onUnauthorized } from './api';
 import { Icon, Logo, type IconName } from './components/Icon';
 import { KeyDialog } from './components/KeyDialog';
 import { NewRunDialog } from './components/NewRunDialog';
+import { Tour } from './components/Tour';
 import {
   ActionsContext, RefreshContext, StatsContext, ToastProvider, useRoute, useTheme, useToast, usePoll,
   type ThemeChoice,
 } from './hooks';
 import Approvals from './pages/Approvals';
+import Help from './pages/Help';
 import Overview from './pages/Overview';
 import Records from './pages/Records';
 import Reports from './pages/Reports';
@@ -20,10 +22,11 @@ const NAV: { key: string; href: string; label: string; icon: IconName }[] = [
   { key: 'runs', href: '#/runs', label: 'Runs', icon: 'route' },
   { key: 'records', href: '#/records', label: 'Records', icon: 'database' },
   { key: 'reports', href: '#/reports', label: 'Daily report', icon: 'report' },
+  { key: 'help', href: '#/help', label: 'Help', icon: 'info' },
 ];
 
 const TITLES: Record<string, string> = {
-  '': 'Overview', approvals: 'Approvals', runs: 'Runs', records: 'Records', reports: 'Daily report',
+  '': 'Overview', approvals: 'Approvals', runs: 'Runs', records: 'Records', reports: 'Daily report', help: 'Help and support',
 };
 
 const THEMES: { value: ThemeChoice; icon: IconName; label: string }[] = [
@@ -40,6 +43,28 @@ function Shell() {
   const [keyOpen, setKeyOpen] = useState(false);
   const [theme, setTheme] = useTheme();
   const [seeding, setSeeding] = useState(false);
+  const [tour, setTour] = useState(false);
+
+  // First visit: offer the tour once, after the page has had a moment to load.
+  useEffect(() => {
+    let seen = true;
+    try {
+      seen = localStorage.getItem('fp_tour') === 'done';
+    } catch {
+      /* storage blocked: skip the automatic tour */
+    }
+    if (seen) return;
+    const id = window.setTimeout(() => setTour(true), 900);
+    return () => window.clearTimeout(id);
+  }, []);
+  const closeTour = useCallback(() => {
+    setTour(false);
+    try {
+      localStorage.setItem('fp_tour', 'done');
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const bump = useCallback(() => setVersion((v) => v + 1), []);
   const refresh = useMemo(() => ({ version, bump }), [version, bump]);
@@ -57,6 +82,9 @@ function Shell() {
         keyOpen={keyOpen}
         setKeyOpen={setKeyOpen}
         seeding={seeding}
+        tour={tour}
+        startTour={() => setTour(true)}
+        closeTour={closeTour}
         onSeed={async () => {
           setSeeding(true);
           try {
@@ -83,17 +111,20 @@ interface InnerProps {
   keyOpen: boolean;
   setKeyOpen: (b: boolean) => void;
   seeding: boolean;
+  tour: boolean;
+  startTour: () => void;
+  closeTour: () => void;
   onSeed: () => Promise<void>;
 }
 
-function ShellInner({ route, theme, setTheme, newRun, setNewRun, keyOpen, setKeyOpen, seeding, onSeed }: InnerProps) {
+function ShellInner({ route, theme, setTheme, newRun, setNewRun, keyOpen, setKeyOpen, seeding, tour, startTour, closeTour, onSeed }: InnerProps) {
   const statsPoll = usePoll(() => api.stats(), [], 8000);
   const health = usePoll(() => api.health(), [], 60000);
   const stats = useMemo(
     () => ({ stats: statsPoll.data, loaded: statsPoll.loaded, error: statsPoll.error }),
     [statsPoll.data, statsPoll.loaded, statsPoll.error],
   );
-  const actions = useMemo(() => ({ openNewRun: () => setNewRun(true), loadDemo: onSeed }), [setNewRun, onSeed]);
+  const actions = useMemo(() => ({ openNewRun: () => setNewRun(true), loadDemo: onSeed, startTour }), [setNewRun, onSeed, startTour]);
 
   const section = route.path[0] ?? '';
   const waiting = statsPoll.data?.totals.awaiting_approval ?? 0;
@@ -113,6 +144,7 @@ function ShellInner({ route, theme, setTheme, newRun, setNewRun, keyOpen, setKey
     case 'runs': page = route.path[1] && Number.isFinite(Number(route.path[1])) ? <RunDetail id={Number(route.path[1])} /> : <Runs route={route} />; break;
     case 'records': page = <Records route={route} />; break;
     case 'reports': page = <Reports />; break;
+    case 'help': page = <Help />; break;
     default:
       page = (
         <div className="panel empty">
@@ -133,7 +165,7 @@ function ShellInner({ route, theme, setTheme, newRun, setNewRun, keyOpen, setKey
             </a>
             <nav className="rail__nav" aria-label="Main">
               {NAV.map((n) => (
-                <a key={n.key} href={n.href} className={`rail__link${section === n.key ? ' is-active' : ''}`} aria-current={section === n.key ? 'page' : undefined}>
+                <a key={n.key} href={n.href} data-tour={n.key ? `nav-${n.key}` : 'nav-overview'} className={`rail__link${section === n.key ? ' is-active' : ''}`} aria-current={section === n.key ? 'page' : undefined}>
                   <Icon name={n.icon} />
                   <span>{n.label}</span>
                   {n.key === 'approvals' && waiting > 0 && <span className="rail__count num" aria-label={`${waiting} waiting`}>{waiting}</span>}
@@ -148,8 +180,9 @@ function ShellInner({ route, theme, setTheme, newRun, setNewRun, keyOpen, setKey
                   </button>
                 ))}
               </div>
+              <button type="button" className="btn rail__btn" onClick={startTour}><Icon name="sparkle" />Take the tour</button>
               <button type="button" className="btn" style={{ background: 'transparent', color: '#c9d4e2', borderColor: 'rgba(255,255,255,0.22)', justifyContent: 'flex-start' }} onClick={() => setKeyOpen(true)}>API key</button>
-              <p className="rail__hint">Emails and invoices in, CRM records and approvals out.</p>
+              <p className="rail__hint">The AI does the routine work. You make the calls that matter.</p>
             </div>
           </aside>
           <div className="main">
@@ -160,10 +193,10 @@ function ShellInner({ route, theme, setTheme, newRun, setNewRun, keyOpen, setKey
                   <span className={`engine__dot${health.error ? ' is-off' : ''}`} />
                   {engine}
                 </span>
-                <button type="button" className="btn" onClick={() => void onSeed()} disabled={seeding}>
+                <button type="button" className="btn" data-tour="demo" onClick={() => void onSeed()} disabled={seeding}>
                   <Icon name={seeding ? 'spinner' : 'sparkle'} />{seeding ? 'Loading…' : 'Load demo data'}
                 </button>
-                <button type="button" className="btn btn--primary" onClick={() => setNewRun(true)}>
+                <button type="button" className="btn btn--primary" data-tour="run" onClick={() => setNewRun(true)}>
                   <Icon name="plus" />Run workflow
                 </button>
               </div>
@@ -173,6 +206,7 @@ function ShellInner({ route, theme, setTheme, newRun, setNewRun, keyOpen, setKey
         </div>
         <NewRunDialog open={newRun} onClose={() => setNewRun(false)} />
         <KeyDialog open={keyOpen} onClose={() => setKeyOpen(false)} />
+        <Tour open={tour} onClose={closeTour} />
       </ActionsContext.Provider>
     </StatsContext.Provider>
   );

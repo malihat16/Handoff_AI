@@ -142,8 +142,9 @@ export const useStats = () => useContext(StatsContext);
 export interface Actions {
   openNewRun: () => void;
   loadDemo: () => Promise<void>;
+  startTour: () => void;
 }
-export const ActionsContext = createContext<Actions>({ openNewRun: () => {}, loadDemo: async () => {} });
+export const ActionsContext = createContext<Actions>({ openNewRun: () => {}, loadDemo: async () => {}, startTour: () => {} });
 export const useActions = () => useContext(ActionsContext);
 
 // ---------------------------------------------------------------- theme

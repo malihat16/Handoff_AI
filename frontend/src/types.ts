@@ -100,6 +100,7 @@ export interface Stats {
     completed: number;
     failed: number;
     blocked: number;
+    decided_by_person: number;
     awaiting_approval: number;
     rejected: number;
     success_rate: number | null;

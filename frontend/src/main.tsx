@@ -1,4 +1,5 @@
 import '@fontsource-variable/atkinson-hyperlegible-next';
+import '@fontsource-variable/bricolage-grotesque';
 import '@fontsource/ibm-plex-mono/400.css';
 import '@fontsource/ibm-plex-mono/500.css';
 import './styles.css';

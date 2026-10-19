@@ -6,7 +6,7 @@ import { Meter } from '../components/Meter';
 import { RouteDots } from '../components/Route';
 import { fmtHours, fmtMs, fmtNumber, fmtRelative, workflowLabel } from '../format';
 import { useActions, usePoll, useRefresh, useStats, useToast } from '../hooks';
-import type { Run } from '../types';
+import type { Run, Stats } from '../types';
 
 function Strip({ run }: { run: Run }) {
   return (
@@ -23,6 +23,38 @@ function Strip({ run }: { run: Run }) {
         <span className="strip__go">Review<Icon name="chevron-right" /></span>
       </div>
     </a>
+  );
+}
+
+function Lanes({ t }: { t: Stats['totals'] }) {
+  const auto = Math.max(0, t.completed - t.decided_by_person);
+  const parts = [
+    { key: 'auto', n: auto, label: 'Handled by Handoff', cls: 'auto' },
+    { key: 'you', n: t.decided_by_person + t.rejected, label: 'Decided by you', cls: 'you' },
+    { key: 'wait', n: t.awaiting_approval, label: 'Waiting for you', cls: 'wait' },
+    { key: 'stop', n: t.failed + t.blocked, label: 'Stopped by a check', cls: 'stop' },
+  ];
+  const total = parts.reduce((s, p) => s + p.n, 0) || 1;
+  const pct = Math.round((auto / total) * 100);
+  return (
+    <section className="panel lanes" aria-label="Who did the work">
+      <div className="lanes__head">
+        <h2 className="panel__title">Who did the work</h2>
+        <p className="lanes__line">
+          <strong className="lanes__pct num">{pct}%</strong> of runs finished with no human step
+        </p>
+      </div>
+      <div className="lanes__bar" role="img" aria-label={parts.map((p) => `${p.n} ${p.label.toLowerCase()}`).join(', ')}>
+        {parts.filter((p) => p.n > 0).map((p) => (
+          <i key={p.key} className={`lanes__seg lanes__seg--${p.cls}`} style={{ flexGrow: p.n }} />
+        ))}
+      </div>
+      <ul className="lanes__legend">
+        {parts.map((p) => (
+          <li key={p.key}><i className={`lanes__dot lanes__dot--${p.cls}`} /><span className="num">{p.n}</span> {p.label}</li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -72,7 +104,7 @@ export default function Overview() {
 
   return (
     <div className="stack" style={{ gap: 26 }}>
-      <section className="hero" aria-label="Needs your attention">
+      <section className="hero" data-tour="hero" aria-label="Needs your attention">
         <div>
           <div className="hero__num" aria-hidden="true">{t.awaiting_approval}</div>
           <div className="hero__label">
@@ -114,6 +146,8 @@ export default function Overview() {
           )}
         </div>
       </section>
+
+      {t.runs > 0 && <Lanes t={t} />}
 
       <section className="divided divided--kpis" aria-label="Key numbers">
         <div className="kpi">

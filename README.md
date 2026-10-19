@@ -1,8 +1,6 @@
 # Handoff AI
 
-A configurable AI workflow-automation platform. It ingests e-mails and invoices (text or PDF), uses an LLM to
-classify and extract structured data, applies business rules, asks a human for approval when needed, updates
-downstream systems (CRM, invoice ledger, task list, notifications) and reports on the results.
+A configurable AI workflow-automation platform. It ingests e-mails and invoices (text or PDF), uses an LLM to classify and extract structured data, applies business rules, asks a human for approval when needed, updates downstream systems (CRM, invoice ledger, task list, notifications) and reports on the results.
 
 Two complete workflows ship out of the box, defined in [`workflows.json`](workflows.json):
 
@@ -20,8 +18,7 @@ uvicorn app.asgi:app --reload        # open http://localhost:8000
 pytest                               # 33 tests
 ```
 
-Click **Load demo data** in the dashboard: it runs 5 sample e-mails and 5 sample invoices, leaving approvals
-waiting, a duplicate invoice caught and a bad invoice failed, so every feature has something to show.
+Click **Load demo data** in the dashboard: it runs 5 sample e-mails and 5 sample invoices, leaving approvals waiting, a duplicate invoice caught and a bad invoice failed, so every feature has something to show.
 Upload `samples/pdf/palm_logistics_invoice.pdf` to see PDF extraction.
 
 **With Docker (Postgres + app):** `docker compose up --build` → http://localhost:8000
@@ -91,7 +88,6 @@ Other endpoints: `GET /api/runs`, `/api/runs/{id}`, `/api/stats`, `/api/reports/
 Set `DAILY_REPORT_HOUR_UTC=5` to queue the daily report automatically every day.
 
 ## Adding your own workflow
-
 1. Write a step in `app/steps.py` (`fn(ctx, params)`, raise `PermanentError` for non-retryable problems) and
    register it in `STEPS`.
 2. Add a workflow to `workflows.json` using your steps.
